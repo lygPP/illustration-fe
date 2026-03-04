@@ -27,9 +27,61 @@ body {
   background: rgba(17,24,39,0.6);
   backdrop-filter: blur(6px);
   padding: 12px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .app-footer { border-top: 1px solid var(--border); border-bottom: none; }
-.app-header h1 { margin: 0; font-size: 18px; }
+.app-header h1 { margin: 0; }
+.creative-title {
+  font-size: 28px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #60a5fa 0%, #a855f7 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  display: inline-block;
+  letter-spacing: -1px;
+  filter: drop-shadow(0 2px 4px rgba(168, 85, 247, 0.4));
+}
+.footer-text {
+  font-size: 13px;
+  color: var(--muted);
+  opacity: 0.8;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, #9ca3af, #d1d5db, #9ca3af);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  background-size: 200% auto;
+  animation: shine 4s linear infinite;
+}
+@keyframes shine {
+  to { background-position: 200% center; }
+}
+
+.processing-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .app-main {
   padding: 16px;
   max-width: 1100px;
@@ -37,17 +89,19 @@ body {
 }
 
 .chat-wrap {
-  display: grid;
-  grid-template-rows: 1fr auto;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  height: calc(100vh - 140px);
+  height: calc(100vh - 120px);
 }
 .messages {
+  flex: 1;
+  min-height: 0; /* 允许 flex item 缩小 */
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px;
-  overflow: auto;
+  overflow-y: auto;
 }
 .message {
   display: flex;
@@ -83,47 +137,68 @@ body {
   border: 1px solid var(--border);
 }
 
-.composer { display: flex; flex-direction: column; gap: 12px; }
+.composer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .controls {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.controls-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 .controls .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
-.controls label { font-size: 12px; color: var(--muted); }
-.controls select, .controls input[type="file"] {
+.controls label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.controls select {
   background: #0b1220;
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
 }
 .file-add {
-  width: 140px;
-  height: 140px;
   border: 1px dashed var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: #0b1220;
   color: var(--muted);
   display: grid;
   place-items: center;
-  font-size: 32px;
   line-height: 1;
   cursor: pointer;
+}
+.attachments img, .attachments video {
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.prompt textarea {
+  min-height: 50px;
+  height: 60px;
+}
+.file-add, .attachments img, .attachments video {
+  width: 60px;
+  height: 60px;
+}
+.file-add {
+  font-size: 24px;
 }
 .refs-strip {
   overflow-x: auto;
   overflow-y: hidden;
   max-width: 100%;
-  padding-bottom: 6px;
 }
 .refs-strip .attachments {
   flex-wrap: nowrap;

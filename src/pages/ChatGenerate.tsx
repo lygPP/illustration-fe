@@ -1,13 +1,35 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 
 type ResourceType = 'image' | 'video'
+type GenMode = 'first' | 'first_last' | 'ref'
+
+const GEN_MODES: { value: GenMode; label: string; limit: number }[] = [
+  { value: 'first', label: '首帧', limit: 1 },
+  { value: 'first_last', label: '首尾帧', limit: 2 },
+  { value: 'ref', label: '参考图', limit: 4 }
+]
 
 type Message =
-  | { id: string; role: 'user'; content: string; attachments: string[]; meta: { type: ResourceType; model: string; ratio: string } }
-  | { id: string; role: 'assistant'; content: string; kind: ResourceType; previewUrl?: string; error?: string }
+  | {
+      id: string
+      role: 'user'
+      content: string
+      attachments: string[]
+      meta: { type: ResourceType; model: string; ratio: string; genMode: string }
+    }
+  | {
+      id: string
+      role: 'assistant'
+      content: string
+      kind: ResourceType
+      previewUrl?: string
+      error?: string
+      taskId?: string
+      status?: 'processing' | 'succeeded' | 'failed'
+    }
 
-const IMAGE_MODELS = ['flux-dev', 'sdxl', 'dalle3']
-const VIDEO_MODELS = ['pika', 'sora', 'luma']
+const IMAGE_MODELS = ['seedream', 'flux-dev', 'sdxl', 'dalle3']
+const VIDEO_MODELS = ['seedance1.0', 'seedance2.0', 'pika', 'sora', 'luma']
 const RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:2']
 
 async function filesToBase64(files: FileList | null): Promise<string[]> {
@@ -24,28 +46,133 @@ async function filesToBase64(files: FileList | null): Promise<string[]> {
   return Promise.all(tasks)
 }
 
-async function mockGenerate(kind: ResourceType): Promise<{ url: string }> {
-  if (kind === 'image') {
-    const seed = Math.random().toString(36).slice(2)
-    return { url: `https://picsum.photos/seed/${seed}/768/768` }
+async function callGenerateApi(
+  type: ResourceType,
+  model: string,
+  ratio: string,
+  genMode: GenMode,
+  prompt: string,
+  references: string[]
+): Promise<{ url?: string; taskId?: string }> {
+  const sizeMap: Record<string, string> = {
+    '1:1': '1024x1024',
+    '16:9': '1280x720',
+    '9:16': '720x1280',
+    '4:3': '1024x768',
+    '3:2': '1080x720'
   }
-  return { url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' }
+
+  const modeLabelMap: Record<GenMode, string> = {
+    first: '首帧',
+    first_last: '首尾帧',
+    ref: '参考图'
+  }
+
+  const payload = {
+    generateResourceType: type,
+    modelName: model,
+    size: sizeMap[ratio] || '1024x1024',
+    generateRelyType: modeLabelMap[genMode],
+    imageList: references,
+    prompt: prompt
+  }
+
+  const response = await fetch('/api/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  
+  if (data.message) {
+      throw new Error(data.message)
+  }
+
+  if (type === 'image' && data.images && data.images.length > 0) {
+    return { url: data.images[0] }
+  } else if (type === 'video') {
+    if (data.task_id) return { taskId: data.task_id }
+    if (data.video_url) return { url: data.video_url }
+  }
+  
+  throw new Error('No result returned')
 }
 
 export default function ChatGenerate() {
   const [type, setType] = useState<ResourceType>('image')
   const [model, setModel] = useState(IMAGE_MODELS[0])
   const [ratio, setRatio] = useState(RATIOS[0])
+  const [genMode, setGenMode] = useState<GenMode>('first')
   const [prompt, setPrompt] = useState('')
   const [references, setReferences] = useState<string[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
 
+  // Poll video status
+  useEffect(() => {
+    const pollInterval = setInterval(async () => {
+      const pendingVideos = messages.filter((m) => {
+        if (m.role !== 'assistant') return false
+        // @ts-ignore
+        return m.kind === 'video' && m.status === 'processing' && !!m.taskId
+      }) as any[]
+
+      if (pendingVideos.length === 0) return
+
+      for (const msg of pendingVideos) {
+        try {
+          const res = await fetch(`/api/video/${msg.taskId}`)
+          if (!res.ok) continue
+          const data = await res.json()
+          
+          if (data.status === 'succeeded' && data.video_url) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === msg.id
+                  // @ts-ignore
+                  ? { ...m, status: 'succeeded', previewUrl: data.video_url, content: '已生成视频' }
+                  : m
+              )
+            )
+          } else if (data.status === 'failed') {
+            setMessages((prev) =>
+              prev.map((m) =>
+                // @ts-ignore
+                m.id === msg.id ? { ...m, status: 'failed', error: '视频生成失败', content: '生成失败' } : m
+              )
+            )
+          }
+        } catch (e) {
+          console.error('Poll error', e)
+        }
+      }
+    }, 30000)
+
+    return () => clearInterval(pollInterval)
+  }, [messages])
+
   const modelOptions = useMemo(() => (type === 'image' ? IMAGE_MODELS : VIDEO_MODELS), [type])
+  const currentLimit = useMemo(() => GEN_MODES.find((m) => m.value === genMode)?.limit || 4, [genMode])
 
   const handlePickFiles = async (ev: React.ChangeEvent<HTMLInputElement>) => {
-    const base64s = await filesToBase64(ev.target.files)
+    const files = ev.target.files
+    if (!files || files.length === 0) return
+
+    if (references.length + files.length > currentLimit) {
+      alert(`当前模式最多只能上传 ${currentLimit} 个文件`)
+      ev.target.value = ''
+      return
+    }
+
+    const base64s = await filesToBase64(files)
     setReferences((prev: string[]) => [...prev, ...base64s])
     // reset so picking the same files again still triggers change
     ev.target.value = ''
@@ -63,20 +190,22 @@ export default function ChatGenerate() {
       role: 'user',
       content: prompt,
       attachments: references,
-      meta: { type, model, ratio }
+      meta: { type, model, ratio, genMode }
     }
     setMessages((m: Message[]) => [...m, userMsg])
     setLoading(true)
     setPrompt('')
     setReferences([])
     try {
-      const { url } = await mockGenerate(type)
+      const { url, taskId } = await callGenerateApi(type, model, ratio, genMode, prompt, references)
       const assistant: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: type === 'image' ? '已生成图片' : '已生成视频',
+        content: type === 'image' ? '已生成图片' : '视频生成中...',
         kind: type,
-        previewUrl: url
+        previewUrl: url,
+        taskId,
+        status: taskId ? 'processing' : 'succeeded'
       }
       setMessages((m: Message[]) => [...m, assistant])
     } catch (e: any) {
@@ -128,7 +257,13 @@ export default function ChatGenerate() {
               <div className="bubble assistant">
                 <div className="meta">助手</div>
                 <div className="content">{msg.content}{msg.error ? `：${msg.error}` : ''}</div>
-                {msg.previewUrl && (
+                {msg.kind === 'video' && msg.status === 'processing' && (
+                  <div className="processing-placeholder">
+                    <div className="spinner"></div>
+                    <div>视频生成中，请稍候...</div>
+                  </div>
+                )}
+                {msg.status === 'succeeded' && msg.previewUrl && (
                   <div className="attachments">
                     {msg.kind === 'image' ? (
                       <img src={msg.previewUrl} alt="result" />
@@ -162,60 +297,84 @@ export default function ChatGenerate() {
         </div>
         <div>
           <div className="controls">
-            <div className="field">
-              <label>资源类型</label>
-              <select
-                value={type}
-                onChange={(e) => {
-                  const next = e.target.value as ResourceType
-                  setType(next)
-                  setModel(next === 'image' ? IMAGE_MODELS[0] : VIDEO_MODELS[0])
-                }}
-              >
-                <option value="image">图片</option>
-                <option value="video">视频</option>
-              </select>
+            <div className="controls-row">
+              <div className="field">
+                <label>资源类型</label>
+                <select
+                  value={type}
+                  onChange={(e) => {
+                    const next = e.target.value as ResourceType
+                    setType(next)
+                    setModel(next === 'image' ? IMAGE_MODELS[0] : VIDEO_MODELS[0])
+                  }}
+                >
+                  <option value="image">图片</option>
+                  <option value="video">视频</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>使用模型</label>
+                <select value={model} onChange={(e) => setModel(e.target.value)}>
+                  {modelOptions.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>宽高比例</label>
+                <select value={ratio} onChange={(e) => setRatio(e.target.value)}>
+                  {RATIOS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>生成模式</label>
+                <select
+                  value={genMode}
+                  onChange={(e) => {
+                    const mode = e.target.value as GenMode
+                    setGenMode(mode)
+                    const newLimit = GEN_MODES.find((m) => m.value === mode)?.limit || 4
+                    if (references.length > newLimit) {
+                      setReferences((prev) => prev.slice(0, newLimit))
+                    }
+                  }}
+                >
+                  {GEN_MODES.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="field">
-              <label>使用模型</label>
-              <select value={model} onChange={(e) => setModel(e.target.value)}>
-                {modelOptions.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label>宽高比例</label>
-              <select value={ratio} onChange={(e) => setRatio(e.target.value)}>
-                {RATIOS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
+            <div className="field" style={{ marginTop: 0 }}>
               <label>参考图片/视频（可多选）</label>
               <input
                 ref={fileRef}
                 type="file"
                 accept="image/*,video/*"
-                multiple
+                multiple={currentLimit > 1}
                 style={{ display: 'none' }}
                 onChange={handlePickFiles}
               />
               <div className="refs-strip">
                 <div className="attachments">
-                  <div
-                    className="file-add"
-                    onClick={() => fileRef.current?.click()}
-                    aria-label="添加参考"
-                    role="button"
-                  >
-                    +
-                  </div>
+                  {references.length < currentLimit && (
+                    <div
+                      className="file-add"
+                      onClick={() => fileRef.current?.click()}
+                      aria-label="添加参考"
+                      role="button"
+                    >
+                      +
+                    </div>
+                  )}
                   {references.map((a, i) =>
                     a.startsWith('data:video') ? (
                       <div key={i} style={{ position: 'relative' }}>
