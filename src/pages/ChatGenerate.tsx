@@ -226,7 +226,9 @@ export default function ChatGenerate() {
     <div className="chat-wrap">
       <section className="messages" aria-live="polite">
         {messages.length === 0 && (
-          <div style={{ color: '#9ca3af' }}>开始你的创作吧：选择类型、模型、比例，上传参考，输入提示词发送。</div>
+          <div style={{ color: '#9ca3af', textAlign: 'center', marginTop: 40 }}>
+            开始你的创作吧：选择类型、模型、比例，上传参考，输入提示词发送。
+          </div>
         )}
         {messages.map((msg: Message) => {
           if (msg.role === 'user') {
@@ -234,7 +236,7 @@ export default function ChatGenerate() {
               <div key={msg.id} className="message msg-user">
                 <div className="bubble">
                   <div className="meta">
-                    类型: {msg.meta.type} · 模型: {msg.meta.model} · 比例: {msg.meta.ratio}
+                    {msg.meta.type} · {msg.meta.model} · {msg.meta.ratio}
                   </div>
                   <div className="content">{msg.content}</div>
                   {msg.attachments?.length > 0 && (
@@ -256,11 +258,18 @@ export default function ChatGenerate() {
             <div key={msg.id} className="message">
               <div className="bubble assistant">
                 <div className="meta">助手</div>
-                <div className="content">{msg.content}{msg.error ? `：${msg.error}` : ''}</div>
+                <div className="content">
+                  {msg.content}
+                  {msg.error ? <span style={{color: 'red'}}>：{msg.error}</span> : ''}
+                </div>
                 {msg.kind === 'video' && msg.status === 'processing' && (
-                  <div className="processing-placeholder">
-                    <div className="spinner"></div>
-                    <div>视频生成中，请稍候...</div>
+                  <div className="generating-loader" style={{ marginTop: 8 }}>
+                    <div className="dots-container">
+                      <div className="dot" />
+                      <div className="dot" />
+                      <div className="dot" />
+                    </div>
+                    <span>视频生成中...</span>
                   </div>
                 )}
                 {msg.status === 'succeeded' && msg.previewUrl && (
@@ -276,6 +285,23 @@ export default function ChatGenerate() {
             </div>
           )
         })}
+        {loading && (
+          <div className="message">
+            <div className="bubble assistant">
+              <div className="meta">助手</div>
+              <div className="content">
+                <div className="generating-loader">
+                  <div className="dots-container">
+                    <div className="dot" />
+                    <div className="dot" />
+                    <div className="dot" />
+                  </div>
+                  <span>正在生成{type === 'image' ? '图片' : '视频'}...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="composer">
