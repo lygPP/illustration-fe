@@ -91,13 +91,14 @@ async function callGenerateApi(
 
   const data = await response.json()
   
-  if (data.message) {
+  if (data.message && type === 'image') {
       throw new Error(data.message)
   }
 
   if (type === 'image' && data.images && data.images.length > 0) {
     return { url: data.images[0] }
   } else if (type === 'video') {
+    // 兼容后端返回结构：{ type: 'video', task_id: '...', message: '...' }
     if (data.task_id) return { taskId: data.task_id }
     if (data.video_url) return { url: data.video_url }
   }
@@ -115,13 +116,13 @@ export default function ChatGenerate() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  const [previewMedia, setPreviewMedia] = useState<{ type: 'image' | 'video'; url: string } | null>(null)
 
   // Poll video status
   useEffect(() => {
     const pollInterval = setInterval(async () => {
       const pendingVideos = messages.filter((m) => {
         if (m.role !== 'assistant') return false
-        // @ts-ignore
         return m.kind === 'video' && m.status === 'processing' && !!m.taskId
       }) as any[]
 
@@ -136,8 +137,7 @@ export default function ChatGenerate() {
           if (data.status === 'succeeded' && data.video_url) {
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === msg.id
-                  // @ts-ignore
+                m.id === msg.id && m.role === 'assistant'
                   ? { ...m, status: 'succeeded', previewUrl: data.video_url, content: '已生成视频' }
                   : m
               )
@@ -145,8 +145,7 @@ export default function ChatGenerate() {
           } else if (data.status === 'failed') {
             setMessages((prev) =>
               prev.map((m) =>
-                // @ts-ignore
-                m.id === msg.id ? { ...m, status: 'failed', error: '视频生成失败', content: '生成失败' } : m
+                m.id === msg.id && m.role === 'assistant' ? { ...m, status: 'failed', error: '视频生成失败', content: '生成失败' } : m
               )
             )
           }
@@ -243,9 +242,36 @@ export default function ChatGenerate() {
                     <div className="attachments">
                       {msg.attachments.map((a, i) =>
                         a.startsWith('data:video') ? (
-                          <video key={i} src={a} controls />
+                          <div 
+                            key={i} 
+                            style={{ position: 'relative', cursor: 'zoom-in' }}
+                            onClick={() => setPreviewMedia({ type: 'video', url: a })}
+                          >
+                            <video src={a} style={{ pointerEvents: 'none' }} />
+                            <div style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              width: 32,
+                              height: 32,
+                              background: 'rgba(0,0,0,0.5)',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              pointerEvents: 'none'
+                            }}>
+                              <span style={{ color: 'white', fontSize: 14 }}>▶</span>
+                            </div>
+                          </div>
                         ) : (
-                          <img key={i} src={a} alt={`ref-${i}`} />
+                          <img
+                            key={i}
+                            src={a}
+                            alt={`ref-${i}`}
+                            onClick={() => setPreviewMedia({ type: 'image', url: a })}
+                          />
                         )
                       )}
                     </div>
@@ -275,9 +301,34 @@ export default function ChatGenerate() {
                 {msg.status === 'succeeded' && msg.previewUrl && (
                   <div className="attachments">
                     {msg.kind === 'image' ? (
-                      <img src={msg.previewUrl} alt="result" />
+                      <img
+                        src={msg.previewUrl}
+                        alt="result"
+                        onClick={() => setPreviewMedia({ type: 'image', url: msg.previewUrl! })}
+                      />
                     ) : (
-                      <video src={msg.previewUrl} controls />
+                      <div 
+                        style={{ position: 'relative', cursor: 'zoom-in' }}
+                        onClick={() => setPreviewMedia({ type: 'video', url: msg.previewUrl! })}
+                      >
+                        <video src={msg.previewUrl} style={{ pointerEvents: 'none' }} />
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: 48,
+                          height: 48,
+                          background: 'rgba(0,0,0,0.5)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          pointerEvents: 'none'
+                        }}>
+                          <span style={{ color: 'white', fontSize: 24 }}>▶</span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
@@ -303,6 +354,32 @@ export default function ChatGenerate() {
           </div>
         )}
       </section>
+
+      {previewMedia && (
+        <div
+          className="modal-overlay"
+          onClick={() => setPreviewMedia(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          {previewMedia.type === 'image' ? (
+            <img
+              src={previewMedia.url}
+              alt="preview"
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <video
+              src={previewMedia.url}
+              controls
+              autoPlay
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+        </div>
+      )}
 
       <section className="composer">
         <div className="prompt">
