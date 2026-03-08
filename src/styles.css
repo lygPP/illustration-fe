@@ -84,7 +84,8 @@ body {
 
 .app-main {
   padding: 16px;
-  max-width: 1100px;
+  width: 100%;
+  max-width: 584px;
   margin: 0 auto;
 }
 
@@ -312,3 +313,36 @@ body {
 }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn:hover { background: var(--primary-600); }
+
+/* Navigation Styles */
+.nav-links {
+  display: flex;
+  gap: 10px;
+}
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.nav-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.nav-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+}
+
+/* Header Alignment */
+.header-inner {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
