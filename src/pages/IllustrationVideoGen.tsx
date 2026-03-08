@@ -271,6 +271,49 @@ export default function IllustrationVideoGen() {
     setExpandedSteps(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
+  const renderInterruptInfo = (info: any) => {
+    if (Array.isArray(info)) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {info.map((item: any, i: number) => (
+            <div key={i}>
+              {item.text && <div style={{ marginBottom: 4 }}>{item.text}</div>}
+              {item.imageUrls && item.imageUrls.length > 0 && (
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {item.imageUrls.map((url: string, j: number) => (
+                    <img 
+                      key={j} 
+                      src={url} 
+                      alt={`img-${i}-${j}`} 
+                      style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4, cursor: 'zoom-in' }}
+                      onClick={() => window.open(url, '_blank')}
+                    />
+                  ))}
+                </div>
+              )}
+              {item.videoUrls && item.videoUrls.length > 0 && (
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                  {item.videoUrls.map((url: string, j: number) => (
+                    <video 
+                      key={j} 
+                      src={url} 
+                      controls 
+                      style={{ width: 100, height: 60, objectFit: 'cover', borderRadius: 4 }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (typeof info === 'object' && info !== null) {
+      return JSON.stringify(info);
+    }
+    return info;
+  };
+
   return (
     <div className="chat-wrap">
       <section className="composer" style={{ borderBottom: '1px solid #1f2937', paddingBottom: '20px' }}>
@@ -337,15 +380,23 @@ export default function IllustrationVideoGen() {
                           <div style={{ color: '#9ca3af' }}>{
                             (() => {
                               const output = step.output;
+                              // Handle CustomizedOutput.interrupt_info as a map list
                               if (output?.CustomizedOutput && output.CustomizedOutput.interrupt_info) {
-                                return output.CustomizedOutput.interrupt_info;
+                                return renderInterruptInfo(output.CustomizedOutput.interrupt_info);
                               }
+                              
                               if (output?.MessageOutput) {
-                                return JSON.stringify(output.MessageOutput);
+                                // MessageOutput could be an object, stringify it
+                                if (typeof output.MessageOutput === 'object' && output.MessageOutput !== null) {
+                                  return JSON.stringify(output.MessageOutput);
+                                }
+                                return output.MessageOutput;
                               }
                               // If CustomizedOutput exists but interrupt_info is empty string or undefined
                               if (output?.CustomizedOutput) {
-                                return output.CustomizedOutput.interrupt_info || '执行完成';
+                                const info = output.CustomizedOutput.interrupt_info;
+                                if (typeof info === 'object' && info !== null) return JSON.stringify(info);
+                                return info || '执行完成';
                               }
                               
                               // Default to message field if no output
@@ -366,7 +417,9 @@ export default function IllustrationVideoGen() {
                       borderRadius: '8px',
                       marginTop: '10px'
                     }}>
-                      <div style={{ whiteSpace: 'pre-wrap', marginBottom: '10px' }}>{msg.interruptInfo}</div>
+                      <div style={{ whiteSpace: 'pre-wrap', marginBottom: '10px' }}>
+                        {renderInterruptInfo(msg.interruptInfo)}
+                      </div>
                       <div className="reply-input" style={{ display: 'flex', gap: '8px' }}>
                         <input 
                           type="text" 
