@@ -92,6 +92,7 @@ export default function IllustrationVideoGen() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({})
+  const [playingVideo, setPlayingVideo] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -241,6 +242,7 @@ export default function IllustrationVideoGen() {
 
         if (data?.output?.CustomizedOutput) {
              content = data.output.CustomizedOutput.interrupt_info || '执行完成'
+             interruptInfo = data.output.CustomizedOutput.interrupt_info
              if (data.action === 'interrupted') {
                  interruptInfo = data.output.CustomizedOutput.interrupt_info
                  interruptId = data.output.CustomizedOutput.interrupt_id
@@ -294,12 +296,27 @@ export default function IllustrationVideoGen() {
               {item.videoUrls && item.videoUrls.length > 0 && (
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
                   {item.videoUrls.map((url: string, j: number) => (
-                    <video 
+                    <div 
                       key={j} 
-                      src={url} 
-                      controls 
-                      style={{ width: 100, height: 60, objectFit: 'cover', borderRadius: 4 }}
-                    />
+                      style={{ position: 'relative', width: 100, height: 60, cursor: 'pointer' }}
+                      onClick={() => setPlayingVideo(url)}
+                    >
+                      <video 
+                        src={url} 
+                        muted
+                        loop
+                        onMouseOver={(e) => e.currentTarget.play()}
+                        onMouseOut={(e) => e.currentTarget.pause()}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }}
+                      />
+                      <div style={{
+                        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                        width: 20, height: 20, borderRadius: '50%', background: 'rgba(0,0,0,0.5)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none'
+                      }}>
+                        <span style={{ fontSize: '10px', color: 'white', marginLeft: 2 }}>▶</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -457,10 +474,15 @@ export default function IllustrationVideoGen() {
                   {msg.finalOutput && msg.finalOutput.action !== 'interrupted' && (
                     <div className="final-output" style={{ marginTop: '16px', borderTop: '1px solid #374151', paddingTop: '16px' }}>
                       <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#10b981' }}>最终结果</div>
-                      {msg.finalOutput.video_url && (
+                      {msg.interruptInfo ? (
+                        renderInterruptInfo(msg.interruptInfo)
+                      ) : (
+                        <div className="content">{msg.content}</div>
+                      )}
+                      {/* {msg.finalOutput.video_url && (
                         <video src={msg.finalOutput.video_url} controls style={{ maxWidth: '100%', borderRadius: '8px' }} />
                       )}
-                      <div className="content">{msg.content}</div>
+                      <div className="content">{msg.content}</div> */}
                     </div>
                   )}
                 </div>
@@ -487,6 +509,45 @@ export default function IllustrationVideoGen() {
         )}
         <div ref={messagesEndRef} />
       </section>
+
+      {/* Video Modal */}
+      {playingVideo && (
+        <div 
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.8)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(5px)'
+          }} 
+          onClick={() => setPlayingVideo(null)}
+        >
+          <div 
+            style={{ position: 'relative', width: '90%', maxWidth: '1000px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <video
+              src={playingVideo}
+              controls
+              autoPlay
+              style={{ width: '100%', maxHeight: '85vh', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+            />
+            <button
+              onClick={() => setPlayingVideo(null)}
+              style={{
+                position: 'absolute', top: -40, right: 0,
+                background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%',
+                width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'white', fontSize: '18px', cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.4)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
