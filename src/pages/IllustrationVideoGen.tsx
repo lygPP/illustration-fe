@@ -92,7 +92,7 @@ export default function IllustrationVideoGen() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({})
-  const [playingVideo, setPlayingVideo] = useState<string | null>(null)
+  const [previewMedia, setPreviewMedia] = useState<{ type: 'image' | 'video'; url: string } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -288,7 +288,7 @@ export default function IllustrationVideoGen() {
                       src={url} 
                       alt={`img-${i}-${j}`} 
                       style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4, cursor: 'zoom-in' }}
-                      onClick={() => window.open(url, '_blank')}
+                      onClick={() => setPreviewMedia({ type: 'image', url })}
                     />
                   ))}
                 </div>
@@ -299,7 +299,7 @@ export default function IllustrationVideoGen() {
                     <div 
                       key={j} 
                       style={{ position: 'relative', width: 100, height: 60, cursor: 'pointer' }}
-                      onClick={() => setPlayingVideo(url)}
+                      onClick={() => setPreviewMedia({ type: 'video', url })}
                     >
                       <video 
                         src={url} 
@@ -402,13 +402,13 @@ export default function IllustrationVideoGen() {
                                 return renderInterruptInfo(output.CustomizedOutput.interrupt_info);
                               }
                               
-                              if (output?.MessageOutput) {
-                                // MessageOutput could be an object, stringify it
-                                if (typeof output.MessageOutput === 'object' && output.MessageOutput !== null) {
-                                  return JSON.stringify(output.MessageOutput);
-                                }
-                                return output.MessageOutput;
-                              }
+                              // if (output?.MessageOutput) {
+                              //   // MessageOutput could be an object, stringify it
+                              //   if (typeof output.MessageOutput === 'object' && output.MessageOutput !== null) {
+                              //     return JSON.stringify(output.MessageOutput);
+                              //   }
+                              //   return output.MessageOutput;
+                              // }
                               // If CustomizedOutput exists but interrupt_info is empty string or undefined
                               if (output?.CustomizedOutput) {
                                 const info = output.CustomizedOutput.interrupt_info;
@@ -502,7 +502,7 @@ export default function IllustrationVideoGen() {
                     <div className="dot" />
                     <div className="dot" />
                   </div>
-                  <span>Agent正在思考中...</span>
+                  <span>Agent正在执行中...</span>
                </div>
              </div>
           </div>
@@ -510,8 +510,8 @@ export default function IllustrationVideoGen() {
         <div ref={messagesEndRef} />
       </section>
 
-      {/* Video Modal */}
-      {playingVideo && (
+      {/* Media Preview Modal */}
+      {previewMedia && (
         <div 
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -519,20 +519,28 @@ export default function IllustrationVideoGen() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             backdropFilter: 'blur(5px)'
           }} 
-          onClick={() => setPlayingVideo(null)}
+          onClick={() => setPreviewMedia(null)}
         >
           <div 
-            style={{ position: 'relative', width: '90%', maxWidth: '1000px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} 
+            style={{ position: 'relative', width: '90%', maxWidth: '1000px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }} 
             onClick={e => e.stopPropagation()}
           >
-            <video
-              src={playingVideo}
-              controls
-              autoPlay
-              style={{ width: '100%', maxHeight: '85vh', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
-            />
+            {previewMedia.type === 'video' ? (
+              <video
+                src={previewMedia.url}
+                controls
+                autoPlay
+                style={{ width: '100%', maxHeight: '85vh', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+              />
+            ) : (
+              <img
+                src={previewMedia.url}
+                alt="preview"
+                style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+              />
+            )}
             <button
-              onClick={() => setPlayingVideo(null)}
+              onClick={() => setPreviewMedia(null)}
               style={{
                 position: 'absolute', top: -40, right: 0,
                 background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%',
