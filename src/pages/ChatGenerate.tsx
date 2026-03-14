@@ -225,7 +225,8 @@ export default function ChatGenerate() {
     <div className="chat-wrap">
       <section className="messages" aria-live="polite">
         {messages.length === 0 && (
-          <div style={{ color: '#9ca3af', textAlign: 'center', marginTop: 40 }}>
+          <div className="empty-state">
+            <span style={{ fontSize: 48, marginBottom: 20 }}>🎨</span>
             开始你的创作吧：选择类型、模型、比例，上传参考，输入提示词发送。
           </div>
         )}

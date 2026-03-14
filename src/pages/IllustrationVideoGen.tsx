@@ -354,7 +354,8 @@ export default function IllustrationVideoGen() {
 
       <section className="messages">
         {messages.length === 0 && (
-          <div style={{ color: '#9ca3af', textAlign: 'center', marginTop: 40 }}>
+          <div className="empty-state">
+            <span style={{ fontSize: 48, marginBottom: 20 }}>🎬</span>
             请输入主题，Agent 将为您生成插画视频。
           </div>
         )}
