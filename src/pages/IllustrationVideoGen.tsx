@@ -442,6 +442,7 @@ export default function IllustrationVideoGen() {
                         <input 
                           type="text" 
                           placeholder="请输入回复..." 
+                          defaultValue="ok"
                           disabled={isLoading}
                           style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #4b5563', background: '#1f2937', color: 'white' }}
                           onKeyDown={(e) => {
