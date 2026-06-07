@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { apiFetch } from '../api'
 
 interface AgentStep {
   agent_name: string
@@ -25,7 +26,7 @@ const streamResponse = async (
   prompt: string, 
   onChunk: (chunk: string) => void
 ) => {
-  const response = await fetch('/api/agent/stream', {
+  const response = await apiFetch('/api/agent/stream', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -57,7 +58,7 @@ const resumeResponse = async (
   reply: string,
   onChunk: (chunk: string) => void
 ) => {
-  const response = await fetch('/api/agent/resume', {
+  const response = await apiFetch('/api/agent/resume', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -274,12 +275,38 @@ export default function IllustrationVideoGen() {
   }
 
   const renderInterruptInfo = (info: any) => {
+    const renderCharacterRefs = (refs: any[]) => (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+        {refs.map((character: any, i: number) => (
+          <div key={character.id || i} style={{ border: '1px solid #334155', borderRadius: 6, padding: 10, background: 'rgba(15, 23, 42, 0.65)' }}>
+            {character.imageUrls && character.imageUrls.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                {character.imageUrls.map((url: string, j: number) => (
+                  <img
+                    key={j}
+                    src={url}
+                    alt={`${character.name || 'character'}-${j}`}
+                    style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, cursor: 'zoom-in' }}
+                    onClick={() => setPreviewMedia({ type: 'image', url })}
+                  />
+                ))}
+              </div>
+            )}
+            <div style={{ color: '#e5e7eb', fontWeight: 700 }}>{character.name || `角色 ${i + 1}`}</div>
+            {character.role && <div style={{ color: '#93c5fd', fontSize: 12, marginTop: 2 }}>{character.role}</div>}
+            {character.description && <div style={{ color: '#cbd5e1', fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>{character.description}</div>}
+          </div>
+        ))}
+      </div>
+    )
+
     if (Array.isArray(info)) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {info.map((item: any, i: number) => (
             <div key={i}>
               {item.text && <div style={{ marginBottom: 4 }}>{item.text}</div>}
+              {item.characterRefs && item.characterRefs.length > 0 && renderCharacterRefs(item.characterRefs)}
               {item.imageUrls && item.imageUrls.length > 0 && (
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {item.imageUrls.map((url: string, j: number) => (
@@ -326,6 +353,9 @@ export default function IllustrationVideoGen() {
       );
     }
     if (typeof info === 'object' && info !== null) {
+      if (info.characterRefs && info.characterRefs.length > 0) {
+        return renderCharacterRefs(info.characterRefs);
+      }
       return JSON.stringify(info);
     }
     return info;

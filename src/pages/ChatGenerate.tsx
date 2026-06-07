@@ -1,7 +1,15 @@
 import { useMemo, useRef, useState, useEffect } from 'react'
+import { apiFetch, parseJsonResponse } from '../api'
 
 type ResourceType = 'image' | 'video'
 type GenMode = 'first' | 'first_last' | 'ref'
+
+interface PersonaRef {
+  id: string
+  name: string
+  image_url?: string
+  imageUrl?: string
+}
 
 const GEN_MODES: { value: GenMode; label: string; limit: number }[] = [
   { value: 'first', label: '首帧', limit: 1 },
@@ -31,6 +39,10 @@ type Message =
 const IMAGE_MODELS = ['seedream', 'flux-dev', 'sdxl', 'dalle3']
 const VIDEO_MODELS = ['seedance1.0', 'seedance2.0', 'pika', 'sora', 'luma']
 const RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:2']
+
+function personaImage(persona: PersonaRef) {
+  return persona.image_url || persona.imageUrl || ''
+}
 
 async function filesToBase64(files: FileList | null): Promise<string[]> {
   if (!files || files.length === 0) return []
@@ -77,7 +89,7 @@ async function callGenerateApi(
     prompt: prompt
   }
 
-  const response = await fetch('/api/generate', {
+  const response = await apiFetch('/api/generate', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -113,10 +125,30 @@ export default function ChatGenerate() {
   const [genMode, setGenMode] = useState<GenMode>('first')
   const [prompt, setPrompt] = useState('')
   const [references, setReferences] = useState<string[]>([])
+  const [personas, setPersonas] = useState<PersonaRef[]>([])
+  const [selectedPersonaId, setSelectedPersonaId] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [previewMedia, setPreviewMedia] = useState<{ type: 'image' | 'video'; url: string } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadPersonas() {
+      try {
+        const data = await apiFetch('/api/personas').then((res) => parseJsonResponse<unknown>(res))
+        if (cancelled || !data || typeof data !== 'object') return
+        const list = (data as { personas?: PersonaRef[] }).personas
+        if (Array.isArray(list)) setPersonas(list.filter((item) => personaImage(item)))
+      } catch (error) {
+        console.warn('load personas failed', error)
+      }
+    }
+    loadPersonas()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Poll video status
   useEffect(() => {
@@ -130,7 +162,7 @@ export default function ChatGenerate() {
 
       for (const msg of pendingVideos) {
         try {
-          const res = await fetch(`/api/video/${msg.taskId}`)
+          const res = await apiFetch(`/api/video/${msg.taskId}`)
           if (!res.ok) continue
           const data = await res.json()
           
@@ -179,6 +211,18 @@ export default function ChatGenerate() {
 
   const handleRemoveRef = (idx: number) => {
     setReferences((prev: string[]) => prev.filter((_, i: number) => i !== idx))
+  }
+
+  const handleUsePersona = () => {
+    const persona = personas.find((item) => item.id === selectedPersonaId)
+    const url = persona ? personaImage(persona) : ''
+    if (!url) return
+    if (references.length >= currentLimit) {
+      alert(`当前模式最多只能使用 ${currentLimit} 个参考`)
+      return
+    }
+    setReferences((prev) => [...prev, url])
+    setSelectedPersonaId('')
   }
 
   const handleSend = async () => {
@@ -468,6 +512,21 @@ export default function ChatGenerate() {
                 onChange={handlePickFiles}
               />
               <div className="refs-strip">
+                {personas.length > 0 && (
+                  <div className="persona-picker">
+                    <select value={selectedPersonaId} onChange={(e) => setSelectedPersonaId(e.target.value)}>
+                      <option value="">从角色形象选择参考图</option>
+                      {personas.map((persona) => (
+                        <option key={persona.id} value={persona.id}>
+                          {persona.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button className="ghost-btn" type="button" disabled={!selectedPersonaId || references.length >= currentLimit} onClick={handleUsePersona}>
+                      添加参考图
+                    </button>
+                  </div>
+                )}
                 <div className="attachments">
                   {references.length < currentLimit && (
                     <div
