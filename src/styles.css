@@ -995,6 +995,10 @@ body {
   color: var(--muted);
   line-height: 1.6;
 }
+.library-heading.compact {
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
 .library-form,
 .search-form {
   display: flex;
@@ -1014,13 +1018,32 @@ body {
   padding: 10px 12px;
   font-size: 14px;
 }
+.preview-field textarea,
+.voice-create-form input,
+.voice-edit-form input {
+  width: 100%;
+  background: #0b1220;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 14px;
+}
 .library-form input:focus,
 .library-form select:focus,
 .search-form input:focus,
-.preview-field input:focus {
+.preview-field input:focus,
+.preview-field textarea:focus,
+.voice-create-form input:focus,
+.voice-edit-form input:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(59,130,246,0.16);
+}
+.preview-field textarea {
+  resize: vertical;
+  min-height: 78px;
+  line-height: 1.5;
 }
 .preview-field {
   display: flex;
@@ -1029,6 +1052,55 @@ body {
   margin-top: 12px;
   color: var(--muted);
   font-size: 13px;
+}
+.voice-create-form {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 14px;
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.voice-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.voice-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  min-width: 0;
+}
+.voice-sample-row,
+.voice-form-actions,
+.voice-edit-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.voice-sample-row span {
+  color: var(--muted);
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.voice-sample-preview {
+  width: min(460px, 100%);
+}
+.voice-form-actions {
+  justify-content: flex-start;
+}
+.voice-edit-form {
+  margin-bottom: 10px;
+}
+.voice-edit-form input {
+  flex: 1 1 180px;
 }
 .file-chip {
   display: inline-flex;

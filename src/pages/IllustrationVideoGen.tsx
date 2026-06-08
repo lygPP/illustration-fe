@@ -275,6 +275,30 @@ export default function IllustrationVideoGen() {
   }
 
   const renderInterruptInfo = (info: any) => {
+    const renderChapterStory = (item: any) => (
+      <div style={{
+        border: '1px solid #475569',
+        borderRadius: 6,
+        padding: '10px 12px',
+        background: 'rgba(15, 23, 42, 0.68)',
+        marginBottom: 4
+      }}>
+        <div style={{ color: '#93c5fd', fontWeight: 700, marginBottom: 6 }}>
+          第{Number(item.chapterIndex ?? 0) + 1}章故事内容
+        </div>
+        {item.chapterTitle && (
+          <div style={{ color: '#e5e7eb', fontWeight: 700, marginBottom: 4 }}>
+            {item.chapterTitle}
+          </div>
+        )}
+        {item.chapterContent && (
+          <div style={{ color: '#cbd5e1', fontSize: 14, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+            {item.chapterContent}
+          </div>
+        )}
+      </div>
+    )
+
     const renderCharacterRefs = (refs: any[]) => (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
         {refs.map((character: any, i: number) => (
@@ -306,6 +330,7 @@ export default function IllustrationVideoGen() {
           {info.map((item: any, i: number) => (
             <div key={i}>
               {item.text && <div style={{ marginBottom: 4 }}>{item.text}</div>}
+              {(item.chapterTitle || item.chapterContent) && renderChapterStory(item)}
               {item.characterRefs && item.characterRefs.length > 0 && renderCharacterRefs(item.characterRefs)}
               {item.imageUrls && item.imageUrls.length > 0 && (
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -353,6 +378,9 @@ export default function IllustrationVideoGen() {
       );
     }
     if (typeof info === 'object' && info !== null) {
+      if (info.chapterTitle || info.chapterContent) {
+        return renderChapterStory(info);
+      }
       if (info.characterRefs && info.characterRefs.length > 0) {
         return renderCharacterRefs(info.characterRefs);
       }
