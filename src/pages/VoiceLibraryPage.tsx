@@ -58,7 +58,6 @@ export default function VoiceLibraryPage() {
   const [voices, setVoices] = useState<VoiceProfile[]>([])
   const [createOpen, setCreateOpen] = useState(false)
   const [name, setName] = useState('')
-  const [customSpeakerId, setCustomSpeakerId] = useState('')
   const [description, setDescription] = useState('')
   const [previewText, setPreviewText] = useState('这是我的专属音色试听。')
   const [sampleFile, setSampleFile] = useState<File | null>(null)
@@ -117,7 +116,6 @@ export default function VoiceLibraryPage() {
 
   const resetCreateForm = () => {
     setName('')
-    setCustomSpeakerId('')
     setDescription('')
     setPreviewText('这是我的专属音色试听。')
     setSample(null)
@@ -135,7 +133,6 @@ export default function VoiceLibraryPage() {
     try {
       const formData = new FormData()
       formData.append('name', name.trim())
-      formData.append('speaker_id', customSpeakerId.trim())
       formData.append('description', description.trim())
       formData.append('preview_text', previewText.trim())
       formData.append('sample', sampleFile)
@@ -144,8 +141,8 @@ export default function VoiceLibraryPage() {
         body: formData
       })
       const data = await parseJsonResponse<unknown>(response)
-      const voice = voicePayload(data)
-      setMessage(voice?.status === 'processing' ? '音色已提交复刻，训练完成后可生成试听' : '音色已复刻并保存')
+      voicePayload(data)
+      setMessage('音色已通过本地 IndexTTS 复刻并保存')
       resetCreateForm()
       await loadVoices()
     } catch (err) {
@@ -293,10 +290,6 @@ export default function VoiceLibraryPage() {
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：温柔旁白" />
               </label>
               <label>
-                音色 ID
-                <input value={customSpeakerId} onChange={(e) => setCustomSpeakerId(e.target.value)} placeholder="例如：my_voice_001" />
-              </label>
-              <label>
                 备注
                 <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="声音特点、用途或来源" />
               </label>
@@ -337,7 +330,7 @@ export default function VoiceLibraryPage() {
 
             <div className="voice-form-actions">
               <button className="btn" disabled={saving || recording || !name.trim() || !sampleFile} type="submit">
-                {saving ? '复刻并保存中...' : '保存并复刻音色'}
+                {saving ? '本地复刻中...' : '保存并本地复刻'}
               </button>
               <button className="ghost-btn" type="button" disabled={saving} onClick={resetCreateForm}>
                 取消
@@ -380,7 +373,6 @@ export default function VoiceLibraryPage() {
                   )}
                   <div className="history-meta">
                     <span>{voice.status || 'draft'}</span>
-                    {voice.voice_type && <span>{voice.voice_type}</span>}
                     {voice.error_message && <span>{voice.error_message}</span>}
                   </div>
                   {voice.sample_audio_url && <audio src={voice.sample_audio_url} controls />}

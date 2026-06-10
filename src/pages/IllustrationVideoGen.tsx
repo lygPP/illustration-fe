@@ -372,6 +372,13 @@ export default function IllustrationVideoGen() {
                   ))}
                 </div>
               )}
+              {item.audioUrls && item.audioUrls.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                  {item.audioUrls.map((url: string, j: number) => (
+                    <audio key={j} src={url} controls style={{ width: '100%', maxWidth: 360 }} />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
