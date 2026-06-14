@@ -10,6 +10,13 @@ import UserManagementPage from './pages/UserManagementPage'
 
 type AppPage = 'chat' | 'illustration' | 'personas' | 'voices' | 'users' | 'profile'
 
+export interface IllustrationRecoverRequest {
+  sessionId: string
+  input: string
+  theme: string
+  nonce: number
+}
+
 const PAGE_TITLES: Record<AppPage, string> = {
   chat: '图片/视频生成',
   illustration: '插画视频生成',
@@ -30,6 +37,7 @@ function userAvatarUrl(user: { avatar_url?: string; avatarUrl?: string } | null)
 export default function App() {
   const { authLoading, token, user, logout } = useAuth()
   const [page, setPage] = useState<AppPage>('chat')
+  const [recoverRequest, setRecoverRequest] = useState<IllustrationRecoverRequest | null>(null)
 
   useEffect(() => {
     if (!token) setPage('chat')
@@ -51,6 +59,10 @@ export default function App() {
   const userName = displayUserName(user)
   const avatarUrl = userAvatarUrl(user)
   const isSuperAdmin = user?.role === 'super_admin'
+  const handleRecoverAgentWork = (request: Omit<IllustrationRecoverRequest, 'nonce'>) => {
+    setRecoverRequest({ ...request, nonce: Date.now() })
+    setPage('illustration')
+  }
   
   return (
     <div className="app-layout">
@@ -130,11 +142,11 @@ export default function App() {
         </header>
         <main className="app-main">
           {page === 'chat' && <ChatGenerate />}
-          {page === 'illustration' && <IllustrationVideoGen />}
+          {page === 'illustration' && <IllustrationVideoGen recoverRequest={recoverRequest} />}
           {page === 'personas' && <PersonaLibraryPage />}
           {page === 'voices' && <VoiceLibraryPage />}
           {page === 'users' && <UserManagementPage />}
-          {page === 'profile' && <ProfilePage />}
+          {page === 'profile' && <ProfilePage onRecoverAgentWork={handleRecoverAgentWork} />}
         </main>
         <footer className="app-footer">
           <small className="footer-text">
