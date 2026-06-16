@@ -17,14 +17,22 @@ export interface IllustrationRecoverRequest {
   nonce: number
 }
 
-const PAGE_TITLES: Record<AppPage, string> = {
-  chat: '图片/视频生成',
-  illustration: '插画视频生成',
-  personas: '角色形象',
-  voices: '音色库',
-  users: '用户管理',
-  profile: '个人主页'
+const PAGE_META: Record<AppPage, { title: string; desc: string }> = {
+  chat: { title: '图片/视频生成', desc: '按资源类型、模型和参考素材快速生成创作结果。' },
+  illustration: { title: '插画视频生成', desc: '通过多 Agent 流程完成故事、分镜、配音与视频生成。' },
+  personas: { title: '角色形象', desc: '维护常用角色参考图，作为生成任务的稳定视觉锚点。' },
+  voices: { title: '音色库', desc: '管理本地音色样本、试听音频和克隆结果。' },
+  users: { title: '用户管理', desc: '查看用户状态、历史记录、用量和资源概况。' },
+  profile: { title: '个人主页', desc: '管理账号资料、模型用量和历史创作记录。' }
 }
+
+const NAV_ITEMS: Array<{ page: AppPage; label: string; icon: string }> = [
+  { page: 'chat', label: '基础工具', icon: '基' },
+  { page: 'illustration', label: '插画助手', icon: '绘' },
+  { page: 'personas', label: '角色形象', icon: '角' },
+  { page: 'voices', label: '音色库', icon: '音' },
+  { page: 'users', label: '用户管理', icon: '管' }
+]
 
 function displayUserName(user: { nickname?: string; username?: string; name?: string; email?: string } | null) {
   return user?.nickname || user?.username || user?.name || user?.email || '已登录用户'
@@ -55,7 +63,7 @@ export default function App() {
     return <AuthPage />
   }
 
-  const title = PAGE_TITLES[page]
+  const pageMeta = PAGE_META[page]
   const userName = displayUserName(user)
   const avatarUrl = userAvatarUrl(user)
   const isSuperAdmin = user?.role === 'super_admin'
@@ -68,43 +76,23 @@ export default function App() {
     <div className="app-layout">
       <aside className="app-sidebar">
         <div className="sidebar-header">
-          <h1 className="creative-title" style={{ fontSize: '28px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>✨</span> AI创作工坊
-          </h1>
+          <div className="brand-mark" aria-hidden="true">A</div>
+          <div>
+            <h1 className="creative-title">AI创作工坊</h1>
+            <p>Story Atelier</p>
+          </div>
         </div>
         <nav className="nav-links">
-          <button 
-            className={`nav-btn ${page === 'chat' ? 'active' : ''}`}
-            onClick={() => setPage('chat')}
-          >
-            基础工具
-          </button>
-          <button 
-            className={`nav-btn ${page === 'illustration' ? 'active' : ''}`}
-            onClick={() => setPage('illustration')}
-          >
-            插画助手
-          </button>
-          <button
-            className={`nav-btn ${page === 'personas' ? 'active' : ''}`}
-            onClick={() => setPage('personas')}
-          >
-            角色形象
-          </button>
-          <button
-            className={`nav-btn ${page === 'voices' ? 'active' : ''}`}
-            onClick={() => setPage('voices')}
-          >
-            音色库
-          </button>
-          {isSuperAdmin && (
+          {NAV_ITEMS.filter((item) => item.page !== 'users' || isSuperAdmin).map((item) => (
             <button
-              className={`nav-btn ${page === 'users' ? 'active' : ''}`}
-              onClick={() => setPage('users')}
+              key={item.page}
+              className={`nav-btn ${page === item.page ? 'active' : ''}`}
+              onClick={() => setPage(item.page)}
             >
-              用户管理
+              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
             </button>
-          )}
+          ))}
         </nav>
         <div className="sidebar-account">
           <button
@@ -128,17 +116,15 @@ export default function App() {
       </aside>
       <div className="app-content">
         <header className="app-header">
-          <h2>
-            {title.split('').map((char, index) => (
-              <span 
-                key={index} 
-                className="char-span"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                {char}
-              </span>
-            ))}
-          </h2>
+          <div>
+            <p className="page-kicker">Creative workspace</p>
+            <h2>{pageMeta.title}</h2>
+            <span>{pageMeta.desc}</span>
+          </div>
+          <div className="header-status" aria-label="当前登录用户">
+            <span className="status-dot" aria-hidden="true" />
+            <span>{userName}</span>
+          </div>
         </header>
         <main className="app-main">
           {page === 'chat' && <ChatGenerate />}
@@ -150,7 +136,7 @@ export default function App() {
         </main>
         <footer className="app-footer">
           <small className="footer-text">
-            🎨 灵感即刻显现，每一像素都是想象力的延伸
+            Warm Story Atelier
           </small>
         </footer>
       </div>

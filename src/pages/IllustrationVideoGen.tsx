@@ -170,10 +170,10 @@ function VoiceSelectReply({
             flex: '1 1 240px',
             minWidth: 0,
             padding: '9px 10px',
-            borderRadius: '4px',
-            border: '1px solid #4b5563',
-            background: '#1f2937',
-            color: 'white'
+            borderRadius: '8px',
+            border: '1px solid var(--border)',
+            background: 'var(--panel)',
+            color: 'var(--text)'
           }}
         >
           {options.map((option) => (
@@ -187,7 +187,7 @@ function VoiceSelectReply({
         </button>
       </div>
       {selectedOption?.description && (
-        <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.5 }}>{selectedOption.description}</div>
+        <div style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.5 }}>{selectedOption.description}</div>
       )}
       {selectedOption?.previewAudioUrl && (
         <audio src={selectedOption.previewAudioUrl} controls style={{ width: '100%', maxWidth: 360 }} />
@@ -509,22 +509,22 @@ export default function IllustrationVideoGen({ recoverRequest }: IllustrationVid
   const renderInterruptInfo = (info: any) => {
     const renderChapterStory = (item: any) => (
       <div style={{
-        border: '1px solid #475569',
-        borderRadius: 6,
+        border: '1px solid var(--border)',
+        borderRadius: 8,
         padding: '10px 12px',
-        background: 'rgba(15, 23, 42, 0.68)',
+        background: 'var(--panel-soft)',
         marginBottom: 4
       }}>
-        <div style={{ color: '#93c5fd', fontWeight: 700, marginBottom: 6 }}>
+        <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: 6 }}>
           第{Number(item.chapterIndex ?? 0) + 1}章故事内容
         </div>
         {item.chapterTitle && (
-          <div style={{ color: '#e5e7eb', fontWeight: 700, marginBottom: 4 }}>
+          <div style={{ color: 'var(--text)', fontWeight: 700, marginBottom: 4 }}>
             {item.chapterTitle}
           </div>
         )}
         {item.chapterContent && (
-          <div style={{ color: '#cbd5e1', fontSize: 14, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+          <div style={{ color: 'var(--muted-strong)', fontSize: 14, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
             {item.chapterContent}
           </div>
         )}
@@ -534,7 +534,7 @@ export default function IllustrationVideoGen({ recoverRequest }: IllustrationVid
     const renderCharacterRefs = (refs: any[]) => (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
         {refs.map((character: any, i: number) => (
-          <div key={character.id || i} style={{ border: '1px solid #334155', borderRadius: 6, padding: 10, background: 'rgba(15, 23, 42, 0.65)' }}>
+          <div key={character.id || i} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, background: 'var(--panel-soft)' }}>
             {character.imageUrls && character.imageUrls.length > 0 && (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
                 {character.imageUrls.map((url: string, j: number) => (
@@ -548,9 +548,9 @@ export default function IllustrationVideoGen({ recoverRequest }: IllustrationVid
                 ))}
               </div>
             )}
-            <div style={{ color: '#e5e7eb', fontWeight: 700 }}>{character.name || `角色 ${i + 1}`}</div>
-            {character.role && <div style={{ color: '#93c5fd', fontSize: 12, marginTop: 2 }}>{character.role}</div>}
-            {character.description && <div style={{ color: '#cbd5e1', fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>{character.description}</div>}
+            <div style={{ color: 'var(--text)', fontWeight: 700 }}>{character.name || `角色 ${i + 1}`}</div>
+            {character.role && <div style={{ color: 'var(--primary)', fontSize: 12, marginTop: 2 }}>{character.role}</div>}
+            {character.description && <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>{character.description}</div>}
           </div>
         ))}
       </div>
@@ -630,7 +630,7 @@ export default function IllustrationVideoGen({ recoverRequest }: IllustrationVid
 
   return (
     <div className="chat-wrap">
-      <section className="composer" style={{ borderBottom: '1px solid #1f2937', paddingBottom: '20px' }}>
+      <section className="composer" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '20px' }}>
         <div className="prompt">
           <textarea
             placeholder="输入主题，开始生成插画视频..."
@@ -679,8 +679,9 @@ export default function IllustrationVideoGen({ recoverRequest }: IllustrationVid
                        style={{ 
                          cursor: 'pointer', 
                          padding: '8px', 
-                         background: 'rgba(0,0,0,0.2)', 
-                         borderRadius: '4px',
+                         background: 'var(--panel-soft)', 
+                         borderRadius: '8px',
+                         border: '1px solid var(--border)',
                          marginBottom: '8px',
                          display: 'flex',
                          justifyContent: 'space-between',
@@ -694,11 +695,11 @@ export default function IllustrationVideoGen({ recoverRequest }: IllustrationVid
 
                   {/* Steps List */}
                   {expandedSteps[msg.id] && (
-                    <div className="steps-list" style={{ paddingLeft: '10px', borderLeft: '2px solid #333', marginBottom: '10px' }}>
+                    <div className="steps-list" style={{ paddingLeft: '10px', borderLeft: '2px solid var(--border-strong)', marginBottom: '10px' }}>
                       {msg.steps?.map((step, idx) => (
                         <div key={idx} className="step-item" style={{ marginBottom: '8px', fontSize: '0.9em' }}>
-                          <div style={{ color: '#60a5fa', fontWeight: 'bold' }}>{step.agent_name}</div>
-                          <div style={{ color: '#9ca3af' }}>{
+                          <div style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{step.agent_name}</div>
+                          <div style={{ color: 'var(--muted)' }}>{
                             (() => {
                               const output = step.output;
                               // Handle CustomizedOutput.interrupt_info as a map list
@@ -732,8 +733,8 @@ export default function IllustrationVideoGen({ recoverRequest }: IllustrationVid
                   {/* Interrupt Interaction */}
                   {msg.interruptInfo && (!msg.finalOutput || msg.finalOutput.action === 'interrupted') && (
                     <div className="interrupt-box" style={{
-                      border: '1px solid #d97706',
-                      background: 'rgba(217, 119, 6, 0.1)',
+                      border: '1px solid var(--border-strong)',
+                      background: 'var(--accent-soft)',
                       padding: '12px',
                       borderRadius: '8px',
                       marginTop: '10px'
@@ -754,7 +755,7 @@ export default function IllustrationVideoGen({ recoverRequest }: IllustrationVid
                               placeholder="请输入回复..."
                               defaultValue="ok"
                               disabled={isLoading}
-                              style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #4b5563', background: '#1f2937', color: 'white' }}
+                              style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--text)' }}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                                   const val = (e.currentTarget as HTMLInputElement).value
@@ -785,8 +786,8 @@ export default function IllustrationVideoGen({ recoverRequest }: IllustrationVid
 
                   {/* Final Output */}
                   {msg.finalOutput && msg.finalOutput.action !== 'interrupted' && (
-                    <div className="final-output" style={{ marginTop: '16px', borderTop: '1px solid #374151', paddingTop: '16px' }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#10b981' }}>最终结果</div>
+                    <div className="final-output" style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '8px', color: 'var(--success)' }}>最终结果</div>
                       {msg.interruptInfo ? (
                         renderInterruptInfo(msg.interruptInfo)
                       ) : (

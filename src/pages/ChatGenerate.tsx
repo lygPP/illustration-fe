@@ -331,7 +331,7 @@ export default function ChatGenerate() {
                 <div className="meta">助手</div>
                 <div className="content">
                   {msg.content}
-                  {msg.error ? <span style={{color: 'red'}}>：{msg.error}</span> : ''}
+                  {msg.error ? <span style={{ color: 'var(--danger)' }}>：{msg.error}</span> : ''}
                 </div>
                 {msg.kind === 'video' && msg.status === 'processing' && (
                   <div className="generating-loader" style={{ marginTop: 8 }}>
